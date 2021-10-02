@@ -14,7 +14,7 @@ If you just wanna try it:
 
 Create a network telling the size (nodes) of earch layer.
 ```python
-    nn := NewNeuralNetwork(size_input,
+    nn = NewNeuralNetwork(size_input,
                            size_output,
                            [hidden_sizes,])
     # train the network

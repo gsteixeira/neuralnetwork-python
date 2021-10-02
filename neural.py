@@ -1,5 +1,7 @@
 """ 
-Python implementation of a simple Feedforward Neural Network
+A simple feed forward neural network in Python.
+This version allows multiple hidden layers.
+
 
     Author: Gustavo Selbach Teixeira
 
@@ -9,9 +11,22 @@ import math
 
 
 class Layer(object):
+    """
+    The layer object class.
 
-    def __init__(self, n_nodes, n_synapses=0):
-        # initialize nodes
+    Attributes:
+    -----------
+    values : list
+        This is where we write and read data from the NN.
+    bias : list
+        Used to compute the predicitons.
+    deltas : list
+        Used to correct the errors though the network.
+    weights : list of lists - matrix
+        Set the weights of the connections
+    """
+    def __init__(self, n_nodes:int, n_synapses:int=0):
+        """ setup nn layers """
         self.values = [random.uniform(0, 1) for i in range(n_nodes)]
         self.bias = [random.uniform(0, 1) for i in range(n_nodes)]
         self.deltas = [random.uniform(0, 1) for i in range(n_nodes)]
@@ -22,35 +37,107 @@ class Layer(object):
                 self.weights[i][j] = random.uniform(0, 1)
 
 class NeuralNetwork(object):
+    """
+    The Neural Network object. Holds the layers.
+
+    Attributes:
+    -----------
+        input_layer = Layer
+            Where data is inserted to the network.
+        hidden_layers = list of Layers
+            The list of Hidden Layers.
+        output_layer = None
+            Where data is read.
+        learning_rate = 0.1
+            The rate of the learning process.
+    """
     learning_rate = 0.1
 
-    def __init__(self, inputs, outputs, hidden=[]):
+    def __init__(self, inputs:list, outputs:list, hidden:list):
+        """ setup nn layers """
         self.input_layer = Layer(inputs, 0)
-        #print(self.input_layer.nodes)
+        self.hidden_layers_number = len(hidden)
         last_size = inputs
         self.hidden_layers = []
         for hid in hidden:
             self.hidden_layers.append(Layer(hid, last_size))
             last_size = hid
-        #print(self.input_layer.nodes)
         self.output_layer = Layer(outputs, last_size)
     
-    def set_input(self, input_params):
-        """ feed the network """
+    def set_input(self, input_params:list):
+        """ Feed the network with data. """
         assert len(input_params) == len(self.input_layer.values)
-        
         for i in range(len(input_params)):
             self.input_layer.values[i] = input_params[i]
-            
-            
-    def calc_delta_output(self, expected):
-        """ calculate the deltas for the output layer """
+
+    def activation_function(self, source, target):
+        """ The Activation function """
+        for j in range(len(target.values)):
+            activation = target.bias[j]
+            for k in range(len(source.values)):
+                activation += (source.values[k] * target.weights[k][j])
+            target.values[j] = sigmoid(activation)
+
+    def calc_delta_output(self, expected:list):
+        """ Compute the deltas for the output layer """
         for i in range(len(self.output_layer.values)):
             error = (expected[i] - self.output_layer.values[i])
             self.output_layer.deltas[i] = (error 
                             * d_sigmoid(self.output_layer.values[i]))
-    
-    def train(self, inputs, outputs, n_iteractions):
+
+    def calc_deltas(self, source, target):
+        """ Compute the deltas between layers """
+        n_nodes_source = len(source.values)
+        for j in range(len(target.values)):
+            error = 0.0
+            for k in range(n_nodes_source):
+                error += (source.deltas[k] * source.weights[j][k])
+            target.deltas[j] = (error * d_sigmoid(target.values[j]))
+
+    def update_weights(self, source, target):
+        """ Update the weights """
+        target_length = len(target.values)
+        for j in range(len(source.values)):
+            source.bias[j] += (source.deltas[j] * self.learning_rate)
+            for k in range(target_length):
+                source.weights[k][j] += (target.values[k]
+                                        * source.deltas[j] * self.learning_rate)
+
+    def forward_pass(self):
+        """ NN Activation step """
+        k = 0
+        self.activation_function(self.input_layer, self.hidden_layers[k])
+        # Run through the hidden layers. If theres more than 1.
+        last_hidden_layer = nn.hidden_layers_number - 1
+        while k < last_hidden_layer:
+            self.activation_function(self.hidden_layers[k],
+                                     self.hidden_layers[k+1])
+            k += 1
+        self.activation_function(self.hidden_layers[k], self.output_layer)
+
+    def back_propagation(self, outputs:list):
+        """ The back propagation process.
+        Computes the deltas and update the weights and bias.
+        If there' multiple hidden_layers, loops though then back and forth
+        """
+        self.calc_delta_output(outputs)
+        last_hidden_layer = nn.hidden_layers_number - 1
+        k = last_hidden_layer
+        self.calc_deltas(self.output_layer, self.hidden_layers[k])
+        while k > 0:
+            self.calc_deltas(self.hidden_layers[k], self.hidden_layers[k-1])
+            k -= 1
+        # update weights
+        k = last_hidden_layer
+        self.update_weights(self.output_layer, self.hidden_layers[k])
+        while k > 0:
+            self.update_weights(self.hidden_layers[k],
+                                self.hidden_layers[k-1])
+            k -= 1
+        self.update_weights(self.hidden_layers[k], self.input_layer)
+
+    def train(self, inputs:list, outputs:list, n_iteractions:int):
+        """ Training main loop """
         num_training_sets = len(outputs)
         training_sequence = list(range(num_training_sets))
         for n in range(n_iteractions):
@@ -58,26 +145,17 @@ class NeuralNetwork(object):
             for x in range(num_training_sets):
                 i = training_sequence[x]
                 self.set_input(inputs[i])
-                
-                activation_function(self.input_layer, self.hidden_layers[0])
-                activation_function(self.hidden_layers[0], self.output_layer)
-
+                # forward activation
+                self.forward_pass()
                 print("Input: {} Expected: {} Output: {}".format(inputs[i],
-                                                        outputs[i],
-                                                        self.output_layer.values))
+                                                    outputs[i],
+                                                    self.output_layer.values))
+                self.back_propagation(outputs[i])
 
-                self.calc_delta_output(outputs[i])
-                calc_deltas(self.output_layer, self.hidden_layers[0])
-                #calc_deltas(self.hidden_layers[0], self.input_layer)
-            
-                update_weights(self.output_layer, self.hidden_layers[0])
-                update_weights(self.hidden_layers[0], self.input_layer)
-
-    def predict(self, inputs):
-        """ Make a prediction. To be used once the network is trained """
+    def predict(self, inputs:list):
+        """ Make a prediction. To be used after the network is trained """
         self.set_input(inputs)
-        activation_function(self.input_layer, self.hidden_layers[0])
-        activation_function(self.hidden_layers[0], self.output_layer)
+        self.forward_pass()
         return self.output_layer.values
 
 def sigmoid(x):
@@ -87,31 +165,6 @@ def sigmoid(x):
 def d_sigmoid(x):
     """ The derivative of sigmoid function """
     return x * (1 - x)
-
-def activation_function(source, target):
-    """ The Activation function """
-    for j in range(len(target.values)):
-        activation = target.bias[j]
-        for k in range(len(source.values)):
-            activation += (source.values[k] * target.weights[k][j])
-        target.values[j] = sigmoid(activation)
-
-def calc_deltas(source, target):
-    n_nodes_source = len(source.values)
-    for j in range(len(target.values)):
-        error = 0.0
-        for k in range(n_nodes_source):
-            error += (source.deltas[k] * source.weights[j][k])
-        target.deltas[j] = (error * d_sigmoid(target.values[j]))
-
-def update_weights(source, target, learning_rate=0.1):
-    target_length = len(target.values)
-    for j in range(len(source.values)):
-        source.bias[j] += (source.deltas[j] * learning_rate)
-        for k in range(target_length):
-            source.weights[k][j] += (target.values[k]
-                                     * source.deltas[j] * learning_rate)
-
 
 if __name__ == "__main__":
     # Training parameters
@@ -124,20 +177,15 @@ if __name__ == "__main__":
                [1.0],
                [1.0],
                [0.0]]
-    #
-    num_hidden_nodes = 4
-    learning_rate = 0.1
-
-    nn = NeuralNetwork(len(inputs[0]), len(outputs[0]), [num_hidden_nodes, ])
-
+    # Set up the network
+    hidden_nodes = [4,]
+    nn = NeuralNetwork(len(inputs[0]), len(outputs[0]), hidden_nodes)
+    nn.learning_rate = 0.1
     nn.train(inputs, outputs, 10000)
-    
+    # Now the network is fit, lets try some predictions
     for i in range(len(inputs)):
         predicted = nn.predict(inputs[i])
         print("input: ", inputs[i],
-              "predicted:", predicted,
-              "output:", outputs[i])
-
-
-
+              "output:", outputs[i],
+              "predicted: {:.2f}".format(predicted[0]))
 
