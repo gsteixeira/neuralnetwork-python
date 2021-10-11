@@ -1,6 +1,6 @@
 
-from neural import (activation_function, calc_deltas,
-                    calc_delta_output, update_weights, train)
+from neural_procedural import (activation_function, calc_deltas,
+                                calc_delta_output, update_weights, train)
 import pytest
 
 #@pytest.mark.skip
@@ -10,7 +10,7 @@ def test_activation_function():
     target_bias =  [0.1, 0.2]
     weights =  [[0.1, 0.2], [0.3, 0.4]]
     
-    print(weights)
+    #print(weights)
     activation_function(source_layer=source_layer,
                         target_layer=target_layer,
                         target_bias=target_bias,
@@ -18,7 +18,7 @@ def test_activation_function():
     TARGET_LAYER_FINAL = [0.549833997312478, 0.598687660112452] # 1, 0
     TARGET_LAYER_FINAL = [0.598687660112452, 0.6456563062257954] # 0, 1
     
-    print(target_layer)
+    #print(target_layer)
     for i in range(len(TARGET_LAYER_FINAL)):
         print(target_layer[i])
         assert target_layer[i] == TARGET_LAYER_FINAL[i]
@@ -80,7 +80,7 @@ def test_train():
                [1.0],
                [0.0]]
     iteracions = 1
-    train(inputs, outputs, iteracions, 1)
+    train(inputs, outputs, iteracions)
     
     
 if __name__ == "__main__":

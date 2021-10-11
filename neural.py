@@ -42,13 +42,13 @@ class NeuralNetwork(object):
 
     Attributes:
     -----------
-        input_layer = Layer
+        input_layer : Layer
             Where data is inserted to the network.
-        hidden_layers = list of Layers
+        hidden_layers : list of Layers
             The list of Hidden Layers.
-        output_layer = None
+        output_layer : None
             Where data is read.
-        learning_rate = 0.1
+        learning_rate : 0.1
             The rate of the learning process.
     """
     learning_rate = 0.1
@@ -121,16 +121,11 @@ class NeuralNetwork(object):
         If there' multiple hidden_layers, loops though then back and forth
         """
         self.calc_delta_output(outputs)
-        last_hidden_layer = nn.hidden_layers_number - 1
-        k = last_hidden_layer
+        k = nn.hidden_layers_number - 1
         self.calc_deltas(self.output_layer, self.hidden_layers[k])
-        while k > 0:
-            self.calc_deltas(self.hidden_layers[k], self.hidden_layers[k-1])
-            k -= 1
-        # update weights
-        k = last_hidden_layer
         self.update_weights(self.output_layer, self.hidden_layers[k])
         while k > 0:
+            self.calc_deltas(self.hidden_layers[k], self.hidden_layers[k-1])
             self.update_weights(self.hidden_layers[k],
                                 self.hidden_layers[k-1])
             k -= 1
